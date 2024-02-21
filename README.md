@@ -1,2 +1,2 @@
 # jenkins-test
-Testfor using Jenkins
+Test for using Jenkins
