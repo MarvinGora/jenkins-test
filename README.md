@@ -1,2 +1,2 @@
 # jenkins-test
-Test for using Jenkins
+Test for pushin images in harbor private registry

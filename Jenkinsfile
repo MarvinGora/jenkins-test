@@ -1,32 +1,44 @@
 pipeline {
-    agent any
 
+  agent {
+    kubernetes {
+      yamlFile 'kaniko-builder.yaml'
+    }
+  }
     environment {
-        // Please update your own registry here
-        REGISTRY = 'harbor.cloudapp.al'
-        REGISTRY_IMAGE = "$REGISTRY/test-priv/jenkins-test"
-        DOCKERFILE_PATH = 'Dockerfile'
+        APP_NAME = "jenkins-test"
+        RELEASE = "1.0"
+        DOCKER_USER = "marvin.gora"
+        DOCKER_PASS = 'harbor-credentials'
+        IMAGE_NAME = "${DOCKER_USER}" + "/" + "${APP_NAME}"
+        IMAGE_TAG = "${RELEASE}-${BUILD_NUMBER}"
+    }
+    
+stages {
 
-        REGISTRY_USER = credentials('registryUser')
-        REGISTRY_PASSWORD = credentials('registryPassword')
-
-        CURRENT_BUILD_NUMBER = "${currentBuild.number}"
-        GIT_COMMIT_SHORT = sh(returnStdout: true, script: "git rev-parse --short ${GIT_COMMIT}").trim()
+    stage("Cleanup Workspace") {
+      steps {
+        cleanWs()
+      }
     }
 
-    stages {
-        stage('Build') {
+    stage("Checkout from SCM"){
             steps {
-                sh 'docker build -t $REGISTRY_IMAGE:$GIT_COMMIT_SHORT-jenkins-$CURRENT_BUILD_NUMBER -f $DOCKERFILE_PATH .'
+                git branch: 'main', credentialsId: 'github', url: 'https://github.com/MarvinGora/jenkins-test'
             }
-        }
-        stage('Push') {
-            steps {
-                sh 'docker login -u $REGISTRY_USER -p $REGISTRY_PASSWORD $REGISTRY'
-                sh 'docker push $REGISTRY_IMAGE:$GIT_COMMIT_SHORT-jenkins-$CURRENT_BUILD_NUMBER'
-            }
+
         }
 
+    stage('Build & Push with Kaniko') {
+      steps {
+        container(name: 'kaniko', shell: '/busybox/sh') {
+          sh '''#!/busybox/sh
+
+            /kaniko/executor --dockerfile `pwd`/Dockerfile --context `pwd` --destination=${IMAGE_NAME}:${IMAGE_TAG} --destination=${IMAGE_NAME}:latest
+          '''
+        }
+      }
     }
+  }
 
 }
