@@ -9,7 +9,7 @@ pipeline {
   environment {
         APP_NAME = "jenkins-test"
         RELEASE = "1.0.0"
-        DOCKER_USER = "marvin.gora"
+        DOCKER_USER = "harbor.cloudapp.al/marvin.gora"
         DOCKER_PASS = 'harbor-credentials'
         IMAGE_NAME = "${DOCKER_USER}" + "/" + "${APP_NAME}"
         IMAGE_TAG = "${RELEASE}-${BUILD_NUMBER}"
